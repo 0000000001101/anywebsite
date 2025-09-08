@@ -5,23 +5,30 @@ export async function onRequest({ request }) {
 
   if (!target) return new Response("Missing ?u=", { status: 400 });
 
+  // Prevent self-fetch loops
+  if (target.includes(u.origin)) {
+    return new Response("Refusing to fetch own domain", { status: 400 });
+  }
+
   try {
     const resp = await fetch(target, {
-      headers: { "User-Agent": "Mozilla/5.0 (VirtualBrowser)" }
+      headers: {
+        "User-Agent": "Mozilla/5.0 (VirtualBrowser)",
+        "Accept": "*/*"
+      }
     });
 
-    let contentType = resp.headers.get("content-type") || "text/html";
-    let body = await resp.text();
-
+    const contentType = resp.headers.get("content-type") || "";
     const headers = new Headers();
     headers.set("content-type", contentType);
 
+    // If it's HTML → rewrite + inject
     if (contentType.includes("text/html")) {
-      // Inject navigation + optional cookie popup remover
+      let body = await resp.text();
+
       let injectScript = `
 <script>
 (function(){
-  // Navigation: forward link clicks
   document.addEventListener('click', function(e){
     var el = e.target;
     while (el && el.nodeType === 1 && el.tagName !== 'A') el = el.parentElement;
@@ -31,13 +38,11 @@ export async function onRequest({ request }) {
     }
   }, true);
 
-  // Notify parent when loaded
   document.addEventListener('DOMContentLoaded', function(){
     try { parent.postMessage({ type: 'virtualbrowse:loaded', href: location.href }, '*'); } catch(e) {}
   });
 
   ${cookiesEnabled ? `
-  // --- Cookie popup remover ---
   function removeCookiePopups(){
     const selectors = [
       '[id*="cookie"]','[class*="cookie"]',
@@ -63,9 +68,12 @@ export async function onRequest({ request }) {
       } else {
         body += injectScript;
       }
-    }
 
-    return new Response(body, { headers });
+      return new Response(body, { headers });
+    } else {
+      // Non-HTML → just stream it back (images, JS, CSS, video, etc.)
+      return new Response(resp.body, { headers });
+    }
   } catch (err) {
     return new Response("Fetch error: " + err.message, { status: 500 });
   }
