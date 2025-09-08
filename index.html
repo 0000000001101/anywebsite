@@ -4,23 +4,30 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Virtual Browser</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <div class="toolbar">
-    <button id="backBtn" title="Back" disabled>&larr;</button>
-    <button id="forwardBtn" title="Forward" disabled>&rarr;</button>
+    <button id="backBtn" title="Back">&larr;</button>
+    <button id="forwardBtn" title="Forward">&rarr;</button>
     <input id="address" type="text" placeholder="https://example.com" />
     <button id="goBtn">Go</button>
+
+    <label class="cookie-toggle">
+      <input type="checkbox" id="cookieToggle" checked />
+      Auto-hide cookies
+    </label>
   </div>
 
   <div class="frame-wrap">
-    <!-- use src rather than srcdoc so same-origin behavior is consistent -->
-    <iframe id="view" sandbox="allow-forms allow-modals allow-popups allow-scripts allow-same-origin"></iframe>
+    <iframe id="view"
+      sandbox="allow-scripts allow-forms allow-popups allow-modals allow-same-origin"
+      srcdoc="<p>Ready — enter a URL and press Go</p>">
+    </iframe>
   </div>
 
   <div id="status" class="status">Idle</div>
 
-  <script src="script.js"></script>
+  <script src="/script.js"></script>
 </body>
 </html>
